@@ -1,0 +1,513 @@
+<!DOCTYPE html>                                                                    
+  <html lang="en">                                          
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />         
+    <title>J.A.R.V.I.S</title>
+    <style>                                                                          
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {                                                                        
+        --blue: #00d4ff; --blue-dim: #0090b8; --blue-dark: #003a4d;
+        --glow-soft: 0 0 8px #00d4ff66; --bg: #010b12;                               
+        --panel: #020f18cc; --text: #c8f0ff; --text-dim: #4a8ea0;                    
+      }                                                                              
+      html, body { height: 100%; background: var(--bg); font-family: 'Courier New',  
+  monospace; color: var(--text); overflow: hidden; }                                 
+      body::before { content: ''; position: fixed; inset: 0; z-index: 999;           
+  pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 
+  0px, transparent 3px, rgba(0,212,255,0.02) 3px, rgba(0,212,255,0.02) 4px); }
+      .shell { display: grid; grid-template-rows: 56px 1fr 60px;                     
+  grid-template-columns: 220px 1fr 220px; height: 100vh; }                           
+      .topbar { grid-column: 1/-1; display: flex; align-items: center;
+  justify-content: space-between; padding: 0 28px; border-bottom: 1px solid          
+  #00d4ff22; background: var(--panel); }                    
+      .topbar-logo { font-size: 13px; letter-spacing: 8px; font-weight: bold; color: 
+  var(--blue); text-shadow: var(--glow-soft); }                                      
+      .topbar-right { font-size: 11px; color: var(--text-dim); letter-spacing: 3px; }
+      #clock { color: var(--blue); text-shadow: var(--glow-soft); }                  
+      .waveform { display: flex; align-items: center; gap: 3px; height: 24px; }      
+      .waveform .w { width: 3px; border-radius: 2px; background: var(--blue);        
+  animation: waveani 1.4s ease-in-out infinite; }                                    
+      .waveform .w:nth-child(1){animation-delay:.0s}.waveform                        
+  .w:nth-child(2){animation-delay:.1s}.waveform                                      
+  .w:nth-child(3){animation-delay:.2s}.waveform             
+  .w:nth-child(4){animation-delay:.3s}.waveform                                      
+  .w:nth-child(5){animation-delay:.4s}.waveform             
+  .w:nth-child(6){animation-delay:.5s}.waveform
+  .w:nth-child(7){animation-delay:.6s}.waveform
+  .w:nth-child(8){animation-delay:.7s}.waveform
+  .w:nth-child(9){animation-delay:.8s}.waveform .w:nth-child(10){animation-delay:.9s}
+      @keyframes waveani { 0%,100%{height:4px;opacity:.3}
+  50%{height:20px;opacity:1;box-shadow:0 0 4px var(--blue)} }                        
+      .waveform.idle .w { animation-play-state: paused; height: 4px; opacity: .2; }
+      .sidebar { padding: 24px 16px; border-right: 1px solid #00d4ff18; background:  
+  var(--panel); display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
+      .sidebar.right { border-right: none; border-left: 1px solid #00d4ff18; }       
+      .panel-block { border: 1px solid #00d4ff22; background: #020d17; padding: 12px 
+  14px; border-radius: 4px; }                                                        
+      .panel-title { font-size: 9px; letter-spacing: 4px; color: var(--text-dim);    
+  margin-bottom: 10px; text-transform: uppercase; }                                  
+      .panel-value { font-size: 12px; color: var(--blue); line-height: 1.8; }
+      .status-row { display: flex; align-items: center; gap: 10px; font-size: 11px;  
+  letter-spacing: 2px; }                                                             
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background:         
+  var(--blue); box-shadow: 0 0 6px var(--blue); flex-shrink: 0; transition:          
+  background .3s; }                                         
+      .status-dot.warn  { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }        
+      .status-dot.error { background: #ff4444; box-shadow: 0 0 6px #ff4444; }        
+      .status-dot.pulse { animation: dotpulse 1s ease-in-out infinite; }             
+      @keyframes dotpulse { 0%,100%{opacity:1;transform:scale(1)}                    
+  50%{opacity:.4;transform:scale(.6)} }                                              
+      .bars { display: flex; align-items: flex-end; gap: 3px; height: 40px;          
+  margin-top: 8px; }                                                                 
+      .bar { flex: 1; background: var(--blue-dark); border-radius: 2px 2px 0 0;
+  animation: barwave 2.4s ease-in-out infinite; }                                    
+      .bar:nth-child(1){animation-delay:.0s}.bar:nth-child(2){animation-delay:.2s}.ba
+  r:nth-child(3){animation-delay:.4s}.bar:nth-child(4){animation-delay:.6s}.bar:nth-c
+  hild(5){animation-delay:.8s}.bar:nth-child(6){animation-delay:1s}.bar:nth-child(7){
+  animation-delay:1.2s}                                                              
+      @keyframes barwave { 0%,100%{height:6px;background:var(--blue-dark)}
+  50%{height:34px;background:var(--blue);box-shadow:0 0 6px var(--blue)} }           
+      .center { display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 28px; position: relative; overflow: hidden; }        
+      .center::before { content: ''; position: absolute; inset: 0; background:
+  linear-gradient(rgba(0,212,255,.025) 1px,transparent                               
+  1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
+  background-size: 40px 40px; }                                                      
+      .reactor-wrap { position: relative; width: 240px; height: 240px; display: flex;
+   align-items: center; justify-content: center; z-index: 2; }                       
+      .ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px
+  solid transparent; border-top-color: var(--blue); border-right-color: var(--blue); 
+  animation: spin 6s linear infinite; box-shadow: 0 0 10px #00d4ff55; }
+      .ring-mid   { position: absolute; inset: 12px; border-radius: 50%; border: 1px 
+  solid #00d4ff33; border-bottom-color: var(--blue); animation: spin 4s linear       
+  infinite reverse; }
+      .ring-inner { position: absolute; inset: 30px; border-radius: 50%; border: 2px 
+  dashed #00d4ff22; animation: spin 10s linear infinite; }                           
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .reactor-core { width: 140px; height: 140px; border-radius: 50%; background:   
+  radial-gradient(circle at 40% 35%,#b0f0ff 0%,#40cfff 20%,#00a8d6 40%,#003d5c       
+  70%,#001a2e 100%); box-shadow: 0 0 30px #00d4ffcc,0 0 70px #00d4ff88,0 0 120px
+  #00d4ff44,inset 0 0 30px #005580; position: relative; animation: corepulse 3s      
+  ease-in-out infinite; cursor: pointer; user-select: none; }
+      .reactor-core::after { content: ''; position: absolute; inset: 18px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,.15); box-shadow: inset 0 0 
+  20px rgba(0,180,220,.4); }
+      @keyframes corepulse {                                                         
+        0%,100% { box-shadow: 0 0 30px #00d4ffcc,0 0 70px #00d4ff88,0 0 120px
+  #00d4ff44,inset 0 0 30px #005580; }                                                
+        50%      { box-shadow: 0 0 50px #00d4ffee,0 0 110px #00d4ffaa,0 0 180px
+  #00d4ff66,inset 0 0 50px #0088cc; }                                                
+      }                                                     
+      .reactor-segments { position: absolute; inset: 40px; border-radius: 50%;       
+  background: conic-gradient(#00d4ff22 0deg,transparent 20deg,transparent            
+  60deg,#00d4ff22 60deg,transparent 80deg,transparent 120deg,#00d4ff22               
+  120deg,transparent 140deg,transparent 180deg,#00d4ff22 180deg,transparent          
+  200deg,transparent 240deg,#00d4ff22 240deg,transparent 260deg,transparent
+  300deg,#00d4ff22 300deg,transparent 320deg,transparent 360deg); animation: spin 20s
+   linear infinite reverse; }
+      .reactor-glow { position: absolute; inset: -40px; border-radius: 50%;
+  background: radial-gradient(circle,#00d4ff1a 0%,transparent 70%); pointer-events:  
+  none; animation: corepulse 3s ease-in-out infinite; }
+      .mic-hint { font-size: 9px; letter-spacing: 3px; color: var(--text-dim);       
+  margin-top: -16px; z-index: 2; text-align: center; }                               
+      .badge { display: inline-block; font-size: 11px; letter-spacing: 4px; padding:
+  6px 20px; border: 1px solid var(--blue); color: var(--blue); text-shadow:          
+  var(--glow-soft); box-shadow: var(--glow-soft); text-transform: uppercase;
+  transition: all .4s; background: #00d4ff08; }                                      
+      .command-feed { z-index: 2; text-align: center; max-width: 500px; padding: 0
+  16px; }                                                                            
+      .feed-label { font-size: 9px; letter-spacing: 4px; color: var(--text-dim);
+  margin-bottom: 8px; }                                                              
+      #last-command { font-size: 15px; color: var(--text); letter-spacing: 2px;
+  min-height: 22px; transition: all .3s; text-shadow: 0 0 8px rgba(0,212,255,.4); }  
+      #last-action  { font-size: 11px; color: var(--blue-dim); letter-spacing: 1px;
+  margin-top: 6px; min-height: 18px; }                                               
+      .bottombar { grid-column: 1/-1; display: flex; align-items: center;
+  justify-content: space-between; padding: 0 28px; border-top: 1px solid #00d4ff22;  
+  background: var(--panel); }                               
+      .bottom-item { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); } 
+      .bottom-item span { color: var(--blue); }                                      
+      #log { font-size: 10px; line-height: 2; max-height: 180px; overflow-y: auto;
+  color: var(--text-dim); }                                                          
+      #log::-webkit-scrollbar { width: 4px; }               
+      #log::-webkit-scrollbar-thumb { background: var(--blue-dark); border-radius:   
+  2px; }                                                                             
+      /* Open overlay */
+      #open-overlay { display: none; position: fixed; inset: 0; z-index: 1000;       
+  background: rgba(1,11,18,.9); backdrop-filter: blur(4px); flex-direction: column;  
+  align-items: center; justify-content: center; gap: 24px; }
+      #open-overlay.show { display: flex; animation: fadein .3s ease; }              
+      @keyframes fadein { from{opacity:0} to{opacity:1} }   
+      .ov-label { font-size: 10px; letter-spacing: 5px; color: var(--text-dim); }    
+      .ov-site  { font-size: 22px; letter-spacing: 4px; color: var(--blue);          
+  text-shadow: 0 0 20px #00d4ffaa; }                                                 
+      .ov-btn   { display: block; padding: 16px 52px; cursor: pointer; background:   
+  #00d4ff0a; border: 1px solid var(--blue); color: var(--blue); font-family: 'Courier
+   New', monospace; font-size: 13px; letter-spacing: 5px; text-decoration: none;
+  box-shadow: 0 0 24px #00d4ff44; text-transform: uppercase; transition: background  
+  .2s; }                                                    
+      .ov-btn:hover { background: #00d4ff22; box-shadow: 0 0 40px #00d4ff88; }
+      .ov-dismiss { font-size: 9px; letter-spacing: 3px; color: var(--text-dim);     
+  cursor: pointer; }                                                                 
+      .ov-dismiss:hover { color: var(--blue); }                                      
+      /* Debug + warn */                                                             
+      #dbg  { position: absolute; bottom: 8px; left: 50%; transform:
+  translateX(-50%); font-size: 9px; letter-spacing: 2px; color: #1a4a5a; z-index: 3; 
+  white-space: nowrap; }
+      #warn { display: none; position: fixed; top: 64px; left: 50%; transform:       
+  translateX(-50%); background: #1a0800; border: 1px solid #ff6600; color: #ff9944;  
+  font-size: 11px; letter-spacing: 2px; padding: 8px 24px; z-index: 1001; text-align:
+   center; max-width: 90vw; }                                                        
+      @keyframes pop { from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)} }                                            
+      .pop { animation: pop .25s ease forwards; }
+    </style>                                                                         
+  </head>                                                   
+  <body>                                                                             
+                                                            
+  <!-- URL overlay — requires tap so popup blockers never fire -->                   
+  <div id="open-overlay">
+    <div class="ov-label">READY TO OPEN</div>                                        
+    <div class="ov-site" id="ov-name"></div>                
+    <a id="ov-btn" class="ov-btn" href="#" target="_blank" rel="noopener             
+  noreferrer">TAP TO OPEN</a>                                                        
+    <div class="ov-dismiss" id="ov-dismiss">DISMISS</div>                            
+  </div>                                                                             
+                                                                                     
+  <div id="warn"></div>
+                                                                                     
+  <div class="shell">                                       
+    <header class="topbar">
+      <div class="topbar-logo">J.A.R.V.I.S</div>
+      <div class="waveform idle" id="wf">                                            
+        <div class="w"></div><div class="w"></div><div class="w"></div><div          
+  class="w"></div><div class="w"></div>                                              
+        <div class="w"></div><div class="w"></div><div class="w"></div><div          
+  class="w"></div><div class="w"></div>                                              
+      </div>
+      <div class="topbar-right"><span id="clock">00:00:00</span> &nbsp;|&nbsp;       
+  ONLINE</div>                                                                       
+    </header>
+                                                                                     
+    <aside class="sidebar">                                 
+      <div class="panel-block">
+        <div class="panel-title">System Status</div>                                 
+        <div class="status-row">
+          <div class="status-dot" id="sdot"></div>                                   
+          <div class="panel-value" id="stxt">IDLE</div>                              
+        </div>
+      </div>                                                                         
+      <div class="panel-block">                             
+        <div class="panel-title">Audio Input</div>
+        <div class="bars"><div class="bar"></div><div class="bar"></div><div         
+  class="bar"></div><div class="bar"></div><div class="bar"></div><div               
+  class="bar"></div><div class="bar"></div></div>                                    
+      </div>                                                                         
+      <div class="panel-block">                             
+        <div class="panel-title">Wake Phrase</div>
+        <div class="panel-value">"JARVIS"</div>                                      
+      </div>
+      <div class="panel-block">                                                      
+        <div class="panel-title">State</div>                
+        <div class="panel-value" id="modetxt"                                        
+  style="color:var(--text-dim)">STANDBY</div>                                        
+      </div>                                                                         
+    </aside>                                                                         
+                                                            
+    <main class="center">
+      <div class="reactor-wrap" id="reactor">
+        <div class="reactor-glow"></div>
+        <div class="ring-outer"></div><div class="ring-mid"></div><div 
+  class="ring-inner"></div>                                                          
+        <div class="reactor-segments"></div>
+        <div class="reactor-core"></div>                                             
+      </div>                                                                         
+      <div class="mic-hint" id="hint">CLICK REACTOR TO ACTIVATE</div>
+      <div class="status-label"><div class="badge" id="badge">IDLE</div></div>       
+      <div class="command-feed">                                                     
+        <div class="feed-label">LAST COMMAND</div>
+        <div id="last-cmd">—</div>                                                   
+        <div id="last-act">Click the reactor to begin.</div>                         
+      </div>
+      <div id="dbg">STT: idle</div>                                                  
+    </main>                                                                          
+  
+    <aside class="sidebar right">                                                    
+      <div class="panel-block">                             
+        <div class="panel-title">Command Log</div>                                   
+        <div id="log">—</div>
+      </div>                                                                         
+      <div class="panel-block">                             
+        <div class="panel-title">Quick Reference</div>
+        <div class="panel-value"                                                     
+  style="font-size:10px;line-height:2;color:var(--text-dim)">                        
+          open youtube<br>open gmail<br>open chatgpt<br>open netflix<br>             
+          open github<br>open [any site]<br>what time is it<br>quit jarvis           
+        </div>                                                                       
+      </div>                                                                         
+    </aside>                                                                         
+                                                            
+    <footer class="bottombar">
+      <div class="bottom-item">STARK INDUSTRIES &nbsp; v1.0</div>
+      <div class="bottom-item">CORE POWER &nbsp;<span>ARC REACTOR</span></div>       
+      <div class="bottom-item">SYSTEM &nbsp;<span>NOMINAL</span></div>               
+    </footer>                                                                        
+  </div>                                                                             
+                                                                                     
+  <script>                                                  
+  // ── CONFIG ──────────────────────────────────────
+  const WAKE = "jarvis";                                                             
+  
+  const SITES = {                                                                    
+    "youtube":"https://youtube.com","gmail":"https://mail.google.com",
+    "google":"https://google.com","chatgpt":"https://chat.openai.com",               
+    "chat gpt":"https://chat.openai.com","netflix":"https://netflix.com",            
+    "spotify":"https://open.spotify.com","spotify web":"https://open.spotify.com",
+    "github":"https://github.com","twitter":"https://twitter.com",                   
+    "x":"https://x.com","reddit":"https://reddit.com",                               
+    "linkedin":"https://linkedin.com","amazon":"https://amazon.com",                 
+    "instagram":"https://instagram.com","facebook":"https://facebook.com",           
+    "whatsapp":"https://web.whatsapp.com","notion":"https://notion.so",              
+    "figma":"https://figma.com","claude":"https://claude.ai",
+    "vercel":"https://vercel.com","hacker news":"https://news.ycombinator.com",      
+    "wikipedia":"https://wikipedia.org","maps":"https://maps.google.com",
+    "google maps":"https://maps.google.com","drive":"https://drive.google.com",      
+    "google                                                 
+  drive":"https://drive.google.com","calendar":"https://calendar.google.com",        
+    "docs":"https://docs.google.com","google docs":"https://docs.google.com",
+    "sheets":"https://sheets.google.com","slides":"https://slides.google.com",       
+    "meet":"https://meet.google.com","zoom":"https://zoom.us",
+    "twitch":"https://twitch.tv","discord":"https://discord.com/app",                
+    "slack":"https://app.slack.com","pinterest":"https://pinterest.com",             
+    "tiktok":"https://tiktok.com","stackoverflow":"https://stackoverflow.com",       
+    "stack overflow":"https://stackoverflow.com","medium":"https://medium.com",      
+    "paypal":"https://paypal.com"                                                    
+  };                                                        
+                                                                                     
+  const APPS = ["terminal","finder","safari","chrome","vscode","vs                   
+  code","xcode","calculator","notes","messages","mail","music","photos"];
+                                                                                     
+  // ── DOM ──────────────────────────────────────────                               
+  const $ = id => document.getElementById(id);
+  const sdot=$("sdot"), stxt=$("stxt"), badge=$("badge"), modetxt=$("modetxt");      
+  const wf=$("wf"), hintEl=$("hint"), dbgEl=$("dbg"), warnEl=$("warn");              
+  const cmdEl=$("last-cmd"), actEl=$("last-act"), logEl=$("log");                    
+  const overlay=$("open-overlay"), ovName=$("ov-name"), ovBtn=$("ov-btn");           
+                                                                                     
+  // ── CLOCK ────────────────────────────────────────      
+  setInterval(()=>{ $("clock").textContent=new                                       
+  Date().toLocaleTimeString("en-US",{hour12:false}); },1000);                        
+   
+  // ── STATE ────────────────────────────────────────                               
+  // 0=idle  1=wake  2=command                              
+  let S=0, rec=null, speaking=false;                                                 
+                                                                                     
+  // ── STATUS UI ────────────────────────────────────                               
+  const ST = {                                                                       
+    idle:  {l:"IDLE",       b:"IDLE",      d:"",      m:"STANDBY"  },                
+    wake:  {l:"LISTENING",  b:"LISTENING", d:"pulse", m:"WAKE WORD"},                
+    cmd:   {l:"CAPTURING",  b:"CAPTURING", d:"pulse", m:"COMMAND"  },                
+    exec:  {l:"EXECUTING",  b:"EXECUTING", d:"warn",  m:"EXECUTE"  },                
+    speak: {l:"SPEAKING",   b:"SPEAKING",  d:"pulse", m:"OUTPUT"   },                
+    error: {l:"ERROR",      b:"ERROR",     d:"error", m:"ERROR"    },                
+  };                                                                                 
+  function ui(k) {                                                                   
+    const s=ST[k]||ST.idle;                                                          
+    sdot.className="status-dot "+s.d; stxt.textContent=s.l;
+    badge.textContent=s.b; modetxt.textContent=s.m;                                  
+    wf.classList.toggle("idle", k!=="wake"&&k!=="cmd");                              
+  }                                                                                  
+  function setCmd(t){ cmdEl.textContent=t; cmdEl.classList.remove("pop"); void       
+  cmdEl.offsetWidth; cmdEl.classList.add("pop"); }                                   
+  function setAct(t,err=false){                             
+    actEl.textContent=t;                                                             
+    if(logEl.textContent==="—") logEl.textContent="";                                
+    const d=document.createElement("div");
+    d.textContent="> "+t; d.style.color=err?"#ff5555":"var(--blue)";                 
+  d.classList.add("pop");                                                            
+    logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight;                        
+    while(logEl.children.length>25) logEl.removeChild(logEl.firstChild);             
+  }                                                         
+  function dbg(t){ dbgEl.textContent="STT: "+t; }                                    
+  function warn(t,ms=5000){                                                          
+    warnEl.textContent=t; warnEl.style.display="block";                              
+    clearTimeout(warn._t); if(ms)                                                    
+  warn._t=setTimeout(()=>warnEl.style.display="none",ms);                            
+  }                                                         
+                                                                                     
+  // ── TTS ──────────────────────────────────────────                               
+  const synth=window.speechSynthesis;
+  let voices=[];                                                                     
+  function loadVoices(){ voices=synth.getVoices(); }        
+  synth.addEventListener("voiceschanged",loadVoices); loadVoices();                  
+   
+  function speak(text, cb){                                                          
+    if(!synth){ cb&&cb(); return; }                         
+    synth.cancel(); speaking=true; ui("speak");                                      
+    killRec(); // stop mic so Jarvis can't hear itself                               
+    const u=new SpeechSynthesisUtterance(text);                                      
+    u.rate=1.0; u.pitch=0.85;                                                        
+    const best=voices.find(v=>v.name.includes("Google UK English                     
+  Male")||v.name.includes("Daniel")||v.name.includes("Alex")||v.name.includes("Google
+   US English"));                                           
+    if(best) u.voice=best;                                                           
+    u.onend=u.onerror=()=>{ speaking=false; cb&&cb(); };    
+    synth.speak(u);                                                                  
+  }
+                                                                                     
+  // ── RECOGNITION ──────────────────────────────────                               
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+                                                                                     
+  function killRec(){                                       
+    if(rec){ rec.onresult=rec.onerror=rec.onend=null; try{rec.abort();}catch(_){}    
+  rec=null; }                                                                        
+  }
+                                                                                     
+  function listen(){                                        
+    if(S===0||speaking) return;
+    killRec();                                                                       
+    if(!SR){ warn("⚠ Use Chrome or Edge — Web Speech API required.",0); return; }
+    rec=new SR();                                                                    
+    rec.continuous=false; rec.interimResults=false; rec.lang="en-US";                
+  rec.maxAlternatives=3;                                                             
+                                                                                     
+    rec.onresult=(e)=>{                                                              
+      const texts=[];                                       
+      for(let i=0;i<e.results.length;i++)
+        for(let j=0;j<e.results[i].length;j++)
+          texts.push(e.results[i][j].transcript.toLowerCase().trim());               
+      dbg(texts[0]||"?");
+      onHeard(texts);                                                                
+    };                                                      
+    rec.onerror=(e)=>{                                                               
+      dbg("err:"+e.error);                                                           
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+        warn("⚠ Microphone blocked. Click the lock icon in your address bar and allow
+   microphone.",0);                                                                  
+        S=0; ui("error"); return;                                                    
+      }                                                                              
+      if(S!==0&&!speaking) setTimeout(listen,400);          
+    };                                                                               
+    rec.onend=()=>{ if(S!==0&&!speaking) setTimeout(listen,150); };
+    try{ rec.start(); }catch(e){ setTimeout(listen,500); }                           
+  }                                                                                  
+   
+  function onHeard(texts){                                                           
+    const first=texts[0]||"";                               
+    if(S===1){                                                                       
+      const hit=texts.find(t=>t.includes(WAKE));
+      if(!hit){ listen(); return; }                                                  
+      const after=hit.split(WAKE).pop().trim();             
+      if(after.length>3){                                                            
+        handleCommand(after);                               
+      } else {                                                                       
+        S=2; ui("cmd"); hintEl.textContent="LISTENING FOR COMMAND...";               
+        setCmd("Wake word detected");                                                
+        speak("Yes, master?",()=>listen());                                          
+      }                                                                              
+    } else if(S===2){                                       
+      S=1;                                                                           
+      handleCommand(first);                                                          
+    }
+  }                                                                                  
+                                                            
+  // ── URL RESOLVER ─────────────────────────────────                               
+  function resolveURL(t){
+    const k=t.toLowerCase().trim();                                                  
+    if(SITES[k]) return SITES[k];                           
+    for(const [n,v] of Object.entries(SITES)) if(k.includes(n)||n.includes(k)) return
+   v;                                                                                
+    if(/^[\w.-]+\.[a-z]{2,}$/.test(k)) return k.startsWith("http")?k:"https://"+k;   
+    if(!k.includes(" ")&&k.length>2) return "https://"+k+".com";                     
+    return "https://www.google.com/search?q="+encodeURIComponent(t);                 
+  }                                                                                  
+  function isApp(t){ return APPS.some(a=>t.toLowerCase().includes(a)); }             
+                                                            
+  // ── OVERLAY ──────────────────────────────────────                               
+  let ovTimer=null;                                         
+  function showOverlay(url,label){                                                   
+    ovName.textContent=label.toUpperCase();                                          
+    ovBtn.href=url;
+    overlay.classList.add("show");                                                   
+    clearTimeout(ovTimer);                                                           
+    ovTimer=setTimeout(hideOverlay,15000);
+  }                                                                                  
+  function hideOverlay(){ overlay.classList.remove("show"); clearTimeout(ovTimer); }
+  $("ov-dismiss").addEventListener("click",hideOverlay);                             
+  ovBtn.addEventListener("click",()=>setTimeout(hideOverlay,300));
+                                                                                     
+  // ── COMMAND HANDLER ───────────────────────────────     
+  function handleCommand(cmd){                                                       
+    const c=cmd.toLowerCase().trim();                                                
+    setCmd(cmd); ui("exec"); dbg("cmd:"+c);
+                                                                                     
+    // quit                                                 
+    if(/\b(quit|exit|goodbye|bye|shut down|shutdown|stop)\b/.test(c)){               
+      speak("Goodbye, master. Going offline.",()=>{ stop(); setAct("Jarvis           
+  offline."); });                                                                    
+      return;                                                                        
+    }                                                                                
+    // time                                                 
+    if(/\btime\b/.test(c)&&!/\bdate\b/.test(c)){                                     
+      const t=new
+  Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});              
+      const m="Yes master. The current time is "+t+".";     
+      setAct(m); speak(m,goWake); return;                                            
+    }                                                                                
+    // date                                                                          
+    if(/\b(date|today|what day|what's today)\b/.test(c)){                            
+      const d=new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",mo
+  nth:"long",day:"numeric"});                                                        
+      const m="Yes master. Today is "+d+".";                                         
+      setAct(m); speak(m,goWake); return;                                            
+    }                                                                                
+    // open / navigate
+    const om=c.match(/^(?:open|go to|navigate to|launch|show me|take me              
+  to|load)\s+(.+)$/);                                                                
+    if(om){
+      const tgt=om[1].trim();                                                        
+      if(isApp(tgt)){                                       
+        const m="I cannot open desktop apps from the browser, master.";
+        setAct(m,true); speak(m,goWake); return;                                     
+      }
+      const url=resolveURL(tgt);                                                     
+      const label=tgt.charAt(0).toUpperCase()+tgt.slice(1);                          
+      const m="Yes master. Opening "+label+".";
+      setAct(m); speak(m,()=>{ showOverlay(url,label); goWake(); }); return;         
+    }                                                                                
+    // search                                                                        
+    const sm=c.match(/^(?:search|search for|find|look up|google)\s+(.+)$/);          
+    if(sm){                                                                          
+      const q=sm[1].trim();
+      const m="Yes master. Searching for "+q+".";                                    
+      setAct(m); speak(m,()=>{                                                       
+  showOverlay("https://www.google.com/search?q="+encodeURIComponent(q),q); goWake(); 
+  }); return;                                                                        
+    }                                                                                
+    // unknown                                              
+    speak("I didn't catch that, master. Please try again.",goWake);
+    setAct("Command not recognised.",true);
+  }                                                                                  
+   
+  function goWake(){ S=1; ui("wake"); hintEl.textContent='SAY "JARVIS" TO ACTIVATE'; 
+  listen(); }                                               
+                                                                                     
+  // ── START / STOP ──────────────────────────────────     
+  function start(){
+    if(!SR){ warn("⚠ Use Chrome or Edge — Web Speech API required.",0); return; }
+    S=1; ui("wake"); hintEl.textContent='SAY "JARVIS" TO ACTIVATE';                  
+    speak("J.A.R.V.I.S. online. Awaiting your command, master.",()=>listen());
+  }                                                                                  
+  function stop(){ S=0; speaking=false; killRec(); synth.cancel(); ui("idle");
+  hintEl.textContent="CLICK REACTOR TO ACTIVATE"; dbg("idle"); }                     
+                                                            
+  // ── REACTOR CLICK ─────────────────────────────────                              
+  $("reactor").addEventListener("click",()=>{               
+    if(S!==0){ stop(); setAct("Jarvis deactivated."); }                              
+    else { start(); }                                                                
+  });
+  </script>                                                                          
+  </body>                                                   
+  </html>
+
